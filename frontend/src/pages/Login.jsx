@@ -8,13 +8,13 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/connect-calendar');
     }
   }, [user, navigate]);
 
   const handleLogin = async () => {
     await login();
-    navigate('/dashboard');
+    navigate('/connect-calendar');
   };
 
   return (
