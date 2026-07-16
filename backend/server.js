@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import aiRouter from './routes/ai.js';
 
 dotenv.config();
 
@@ -13,6 +14,9 @@ app.use(express.json());
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'FlowSphere API is running' });
 });
+
+// AI Meetup Suggestion feature (Gemini-powered)
+app.use('/api/ai', aiRouter);
 
 
 //moth 

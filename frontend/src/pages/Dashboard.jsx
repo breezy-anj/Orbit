@@ -1,9 +1,11 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Calendar, Users, Activity, LogOut } from 'lucide-react';
+import AIPlannerModal from '../components/AIPlannerModal';
 
 export default function Dashboard() {
   const { user, logout } = useContext(AuthContext);
+  const [isPlannerOpen, setIsPlannerOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6 md:p-10 font-sans">
@@ -69,7 +71,10 @@ export default function Dashboard() {
             <button className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-medium transition-colors shadow-lg shadow-blue-500/20">
               Find Common Time
             </button>
-            <button className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-medium transition-colors border border-gray-700">
+            <button
+              onClick={() => setIsPlannerOpen(true)}
+              className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-medium transition-colors border border-gray-700"
+            >
               Ask AI Planner
             </button>
             <button className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-medium transition-colors border border-gray-700">
@@ -78,6 +83,12 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
+
+      <AIPlannerModal
+        isOpen={isPlannerOpen}
+        onClose={() => setIsPlannerOpen(false)}
+        user={user}
+      />
     </div>
   );
 }
