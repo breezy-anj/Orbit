@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import pool from './database.js';
-import friendRoutes from './route.js';
-import availabilityRoutes from './availibility.js';
+import pool from './db.js';
+import friendsRouter from './routes.js';
+import availabilityRouter from './availibility.js';
+import scheduleRouter from './schedule.js';
 
 dotenv.config();
 
@@ -16,14 +17,15 @@ app.get('/api/health', (req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
-  res.json({ 
-    user: { id: '1', name: 'Anjneya', email: 'anjneya@example.com' }, 
-    token: 'mock-jwt-token' 
+  res.json({
+    user: { id: '1', name: 'Anjneya', email: 'anjneya@example.com' },
+    token: 'mock-jwt-token'
   });
 });
 
-app.use('/api/friends', friendRoutes);
-app.use('/api/availability', availabilityRoutes);
+app.use('/api/friends', friendsRouter);
+app.use('/api/availability', availabilityRouter);
+app.use('/api/schedule', scheduleRouter);
 
 const PORT = process.env.PORT || 5000;
 
