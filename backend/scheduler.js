@@ -1,4 +1,3 @@
-
 export function mergeBusyIntervals(intervals) {
     if (intervals.length <= 1) return intervals;
 
