@@ -1,7 +1,9 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import pool from './database.js';
+import friendRoutes from './route.js';
+import availabilityRoutes from './availibility.js';
 
 dotenv.config();
 
@@ -9,13 +11,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// to check if running or not
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'FlowSphere API is running' });
+  res.status(200).json({ status: 'ok', message: 'FlowSphere API is running on PostgreSQL' });
 });
 
-
-//moth 
 app.post('/api/auth/login', (req, res) => {
   res.json({ 
     user: { id: '1', name: 'Anjneya', email: 'anjneya@example.com' }, 
@@ -23,15 +22,10 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+app.use('/api/friends', friendRoutes);
+app.use('/api/availability', availabilityRoutes);
 
-if (process.env.MONGO_URI) {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
-} else {
-  console.log('No MONGO_URI provided. Skipping database connection.');
-}
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
