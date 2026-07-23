@@ -1,6 +1,6 @@
 import express from 'express';
-import pool from '../db.js';
-import { findCommonFreeSlots } from '../utils/scheduler.js';
+import pool from './db.js';
+import { findCommonFreeSlots } from './scheduler.js';
 
 const router = express.Router();
 
