@@ -5,6 +5,7 @@ import pool from './db.js';
 import friendsRouter from './routes.js';
 import availabilityRouter from './availibility.js';
 import scheduleRouter from './schedule.js';
+import aiRouter from './routes/ai.js';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'FlowSphere API is running on PostgreSQL' });
 });
 
+app.use('/api/ai', aiRouter);
 app.post('/api/auth/login', (req, res) => {
   res.json({
     user: { id: '1', name: 'Anjneya', email: 'anjneya@example.com' },
