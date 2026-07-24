@@ -1,14 +1,11 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import { execFile } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-// gemini-2.5-flash is the current stable, cost-efficient model.
-// Swap via GEMINI_MODEL env var (e.g. gemini-3.5-flash) without touching this file.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-// Structured output schema — Gemini will be forced to return JSON matching this shape,
-// so the backend never has to fight with parsing loose text.
 const SUGGESTION_SCHEMA = {
   type: 'object',
   properties: {
@@ -62,14 +59,48 @@ Rules:
 `;
 }
 
-/**
- * Calls the Gemini API and returns an array of personalized meetup suggestions.
- * @param {{user?: object, friends: object[], freeSlots?: object[], preferences?: object}} payload
- * @returns {Promise<Array<object>>}
- */
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const analyticsDir = path.join(__dirname, '..', 'analytics');
+
+function getAIPredictions(payload) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      "python3",
+      ["predict_cli.py", JSON.stringify(payload)],
+      { cwd: analyticsDir },
+      (err, stdout, stderr) => {
+        if (err) return reject(new Error(stderr || err.message));
+        resolve(JSON.parse(stdout));
+      }
+    );
+  });
+}
+
 export async function getMeetupSuggestions(payload) {
   if (!GEMINI_API_KEY) {
     throw new Error('GEMINI_API_KEY is not configured on the server.');
+  }
+
+  const userIds = payload.friends.map(f => f.name.toLowerCase());
+  if (payload.user?.name) {
+    userIds.push(payload.user.name.toLowerCase());
+  }
+  
+  try {
+    const mlResponse = await getAIPredictions({
+      action: "best_slots",
+      user_ids: userIds,
+      top_n: 5
+    });
+    
+    payload.freeSlots = mlResponse.suggestions.map(s => ({
+      datetime: s.datetime,
+      joint_free_probability: (s.joint_free_probability * 100).toFixed(0) + '%'
+    }));
+  } catch (err) {
+    console.error("ML Prediction failed, falling back to provided freeSlots:", err);
   }
 
   const prompt = buildPrompt(payload);

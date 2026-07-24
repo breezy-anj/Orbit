@@ -3,8 +3,6 @@ import { getMeetupSuggestions } from '../services/geminiService.js';
 
 const router = express.Router();
 
-// POST /api/ai/meetup-suggestions
-// body: { user?: object, friends: object[], freeSlots?: object[], preferences?: object }
 router.post('/meetup-suggestions', async (req, res) => {
   const { user, friends, freeSlots, preferences } = req.body;
 

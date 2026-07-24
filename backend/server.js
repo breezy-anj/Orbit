@@ -1,13 +1,11 @@
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import pool from './db.js';
 import friendsRouter from './routes.js';
 import availabilityRouter from './availibility.js';
 import scheduleRouter from './schedule.js';
 import aiRouter from './routes/ai.js';
-
-dotenv.config();
 
 const app = express();
 app.use(cors());

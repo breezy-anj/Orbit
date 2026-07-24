@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { Sparkles, X, Clock, MapPin, Loader2, RefreshCw } from 'lucide-react';
 import { fetchMeetupSuggestions } from '../services/aiService';
 
-// TODO: once the Friends and Calendar features store real data, replace these
-// mocks with whatever comes out of that context/API. The shape below is what
-// the backend (and Gemini prompt) already expect, so nothing else changes.
 const MOCK_FRIENDS = [
   { name: 'Sidhi', interests: ['coffee', 'hiking'], lastMet: '2 weeks ago' },
   { name: 'Rohan', interests: ['gaming', 'cricket'], lastMet: '1 month ago' },
@@ -18,7 +15,7 @@ const MOCK_FREE_SLOTS = [
 
 export default function AIPlannerModal({ isOpen, onClose, user }) {
   const [suggestions, setSuggestions] = useState([]);
-  const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const [status, setStatus] = useState('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
   const runSuggestions = async () => {
@@ -42,13 +39,12 @@ export default function AIPlannerModal({ isOpen, onClose, user }) {
     }
   };
 
-  // Kick off a request the first time the modal opens.
   React.useEffect(() => {
     if (isOpen && status === 'idle') {
       runSuggestions();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
 
   if (!isOpen) return null;
 
