@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMeetupSuggestions } from '../services/geminiService.js';
+import { getMeetupSuggestions } from '../services/llamaService.js';
 
 const router = express.Router();
 
