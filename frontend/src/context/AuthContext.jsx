@@ -11,27 +11,29 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
     if (token && savedUser) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);
   }, []);
 
-  const login = async () => {
+  const login = async (userId) => {
     try {
-      const response = await axios.post('http://localhost:5001/api/auth/login');
+      const response = await axios.post('http://localhost:5001/api/auth/login', { userId });
       const { user, token } = response.data;
-      
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error('Login failed:', error);
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
 

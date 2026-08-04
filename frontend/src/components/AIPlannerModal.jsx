@@ -2,18 +2,8 @@ import React, { useState } from 'react';
 import { Sparkles, X, Clock, MapPin, Loader2, RefreshCw } from 'lucide-react';
 import { fetchMeetupSuggestions } from '../services/aiService';
 
-const MOCK_FRIENDS = [
-  { name: 'Sidhi', interests: ['coffee', 'hiking'], lastMet: '2 weeks ago' },
-  { name: 'Rohan', interests: ['gaming', 'cricket'], lastMet: '1 month ago' },
-  { name: 'Meher', interests: ['books', 'art galleries'], lastMet: '3 days ago' }
-];
 
-const MOCK_FREE_SLOTS = [
-  { day: 'Today', time: '6:00 PM - 8:00 PM' },
-  { day: 'Saturday', time: '11:00 AM - 2:00 PM' }
-];
-
-export default function AIPlannerModal({ isOpen, onClose, user }) {
+export default function AIPlannerModal({ isOpen, onClose, user, friends = [] }) {
   const [suggestions, setSuggestions] = useState([]);
   const [status, setStatus] = useState('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -24,8 +14,7 @@ export default function AIPlannerModal({ isOpen, onClose, user }) {
     try {
       const results = await fetchMeetupSuggestions({
         user: user ? { name: user.name } : undefined,
-        friends: MOCK_FRIENDS,
-        freeSlots: MOCK_FREE_SLOTS,
+        friends: friends.length > 0 ? friends : [{ name: 'a friend', interests: [], lastMet: 'recently' }],
         preferences: { budget: 'medium', activityType: 'casual' }
       });
       setSuggestions(results || []);

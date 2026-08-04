@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 /**
- * Calls the backend, which in turn calls Gemini, and returns personalized meetup suggestions.
+ * Calls the backend, which runs Llama 3.2 via Ollama locally, and returns personalized meetup suggestions.
  * @param {{ user?: object, friends: object[], freeSlots?: object[], preferences?: object }} payload
  * @returns {Promise<Array<object>>}
  */
