@@ -9,9 +9,10 @@
 
 | Contributor Name | Role | Primary Focus Area | Contact / GitHub |
 | :--- | :--- | :--- | :--- |
-| **Anjneya (breezy-anj)** | Project Lead & Full-Stack  | Project Direction, Express APIs, DB Migrations | `@breezy-anj` |
-| **Tanishq Marwari** | Docs & Architecture Lead |ML Lead| System Architecture, README, Documentation & Contribution Logs |ML Predictive Analytics| `@tanishq19-byte` |
-| **Karnika** | AI & Full-Stack Developer | Gemini AI API Integration, AI Meetup Service & UI Planner Modal | `@karnika1021` |
+| **Anjneya (breezy-anj)** | Project Lead & Full-Stack | Project Direction, Express APIs, ML Predictive Analytics, DB Migrations & Dashboard Routes | `@breezy-anj` | 
+**Karnika** | AI & Full-Stack Developer | Llama AI Integration, AI Meetup Service & UI Planner Modal | `@karnika1021` |
+| **Tanishq Marwari** | Docs & Architecture Lead | ML Lead | System Architecture, README,  ML Predictive Analytics Documentation & Daily Contribution Logs | `@tanishq19-byte` |
+|
 | **Sidhi Saxena** | Core Developer & Algorithm Specialist | Interval Merging Algorithm, Availability Engine, Friend Management API | `@sidhi-saxena` |
 
 ---
@@ -23,20 +24,32 @@ At the end of every work session or daily standup meeting, team members should a
 ```markdown
 | Date (YYYY-MM-DD) | Contributor | Component / Module | Completed Tasks & Summary | PR / Commit | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 2026-07-30 | Your Name | Frontend / Backend / AI / ML | Description of what you built/fixed today | `#PR_or_Commit` | ✅ Completed |
+| 2026-08-06 | Your Name | Frontend / Backend / AI / ML | Description of what you built/fixed today | `#PR_or_Commit` | ✅ Completed |
 ```
 
 ---
 
 ## 📅 Daily Contribution Log
 
-### 🚀 Week 2 (July 24, 2026 – Present)
+### 🌟 Week 3 (August 01, 2026 – Present)
 
 | Date | Contributor | Component / Module | Completed Tasks & Key Deliverables | Commit / Reference | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **2026-07-30** | **Tanishq Marwari** | **Documentation & Logs** | Created comprehensive `CONTRIBUTION.md` daily task log & updated project documentation. | `Current` | ✅ Completed |
+| **2026-08-06** | **Tanishq Marwari** | **Documentation & Logs** | Created & updated `CONTRIBUTION.md` daily contribution log with recent Llama AI migration, DB seeding, live backend routes, and dashboard refactoring. | `Current` | ✅ Completed |
+| **2026-08-04** | **Anjneya (breezy-anj)** | **Backend & Dashboard API** | Created database seed script (`seed.js`), implemented dashboard analytics API (`routes/dashboard.js`), enhanced friend management routes (`routes/friends.js`), and updated server initialization (`server.js`). | `4e18729` | ✅ Completed |
+| **2026-08-04** | **Anjneya (breezy-anj)** | **Frontend UI & Integration** | Refactored `Dashboard.jsx` for live API integration, updated `Login.jsx` for demo accounts, enhanced `AuthContext.jsx`, and tuned `AIPlannerModal.jsx`. | `4e18729` | ✅ Completed |
+| **2026-08-04** | **Karnika** | **PR Review & Merge** | Merged PR #2 (`breezy-anj/llama-integration`) replacing Google Gemini AI engine with Meta Llama AI model. | `8e23efb` | ✅ Completed |
+| **2026-08-03** | **Karnika** | **AI Service Migration** | Integrated Llama AI engine (`llamaService.js`), updated environment template (`.env.example`), and redirected `/api/ai` endpoints to process Llama recommendations. | `db89fa9` | ✅ Completed |
+
+---
+
+### 🚀 Week 2 (July 24, 2026 – July 31, 2026)
+
+| Date | Contributor | Component / Module | Completed Tasks & Key Deliverables | Commit / Reference | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **2026-07-30** | **Tanishq Marwari** | **Documentation & Guidelines** | Created comprehensive `CONTRIBUTION.md` task log & `CONTRIBUTING.md` workflow guidelines. | `ca8294c` / `1f19536` | ✅ Completed |
 | **2026-07-24** | **Anjneya (breezy-anj)** | **Integration & Merge** | Merged `main` with feature integration branch. | `0d085da` | ✅ Completed |
-| **2026-07-24** | **Anjneya (breezy-anj)** | **ML Predictive Model & AI** | Implemented Python Machine Learning Predictive Availability Model (`predictive_availability.py`, `predict_cli.py`, `model.pkl`), integrated predictive weighting in `geminiService.js`, and updated `Dashboard.jsx`. | `20de3e1` | ✅ Completed |
+| **2026-07-24** | **Anjneya (breezy-anj)** | **ML Predictive Model & AI** | Implemented Python Machine Learning Predictive Availability Model (`predictive_availability.py`, `predict_cli.py`, `model.pkl`), integrated predictive weighting into AI service, and updated `Dashboard.jsx`. | `20de3e1` | ✅ Completed |
 | **2026-07-24** | **Tanishq Marwari** | **Documentation & Setup** | Finalized comprehensive project `README.md` detailing architecture, system features, user personas, and local setup guide. | `26fe08a` | ✅ Completed |
 
 ---
@@ -81,10 +94,25 @@ At the end of every work session or daily standup meeting, team members should a
 
 | Module | Primary Contributors | Technologies Used | Status |
 | :--- | :--- | :--- | :--- |
-| **Frontend Client** | Anjneya, Tanishq Marwari, Sidhi Saxena, Karnika | React 19, Vite, Tailwind CSS, Lucide React | 🟢 Active |
-| **Backend Express API** | Anjneya, Sidhi Saxena, Karnika | Node.js, Express.js (ES Modules) | 🟢 Active |
+| **Frontend Client** | Anjneya, Tanishq Marwari, Sidhi Saxena, Karnika | React 18/19, Vite, Tailwind CSS, Lucide React | 🟢 Active |
+| **Backend Express API & Seeding** | Anjneya, Sidhi Saxena, Karnika | Node.js, Express.js (ES Modules), `seed.js`, Live Dashboard API | 🟢 Active |
+| **Llama AI Service** | Karnika, Anjneya | Meta Llama AI Engine (`llamaService.js`), JSON Schema Validation | 🟢 Integrated |
 | **ML Predictive Analytics** | Anjneya | Python, Scikit-Learn Model (`model.pkl`), CLI Predictor | 🟢 Integrated |
-| **PostgreSQL Database** | Anjneya, Sidhi Saxena | PostgreSQL, Relational Schema, UUIDs | 🟢 Operational |
-| **Gemini AI Service** | Karnika, Anjneya | Google Gemini AI (`gemini-2.5-flash`), JSON Schema | 🟢 Integrated |
+| **PostgreSQL Database** | Anjneya, Sidhi Saxena | PostgreSQL, Relational Schema, Seed Data, UUIDs | 🟢 Operational |
 | **Interval Scheduler** | Sidhi Saxena | Custom Interval Merging Algorithm ($O(N \log N)$) | 🟢 Complete |
-| **Documentation & Logs** | Tanishq Marwari | Markdown, Daily Task Logging, System Architecture | 🟢 Maintained |
+| **Documentation & Logs** | Tanishq Marwari | Markdown, Daily Task Logging, System Architecture, Contributing Guide | 🟢 Maintained |
+
+---
+
+## 🛠️ Guidelines for Logging Daily Tasks
+
+1. **Daily Log Requirement**: Each team member must add a line entry under the current week in `CONTRIBUTION.md` upon completing a task or merging a PR.
+2. **Atomic Commits**: Commit code regularly with clear, descriptive commit messages (e.g., `feat(ai): integrate llama meetup generator`).
+3. **Pull Request Reviews**: All major feature additions must be submitted as PRs and reviewed before merging into `main`.
+4. **Environment Safety**: Never commit sensitive API keys or database passwords to `.env` files.
+
+---
+
+## ❓ Need Assistance?
+
+For any questions regarding daily task assignments or contribution guidelines, check in during daily standups or open a discussion issue on GitHub.
