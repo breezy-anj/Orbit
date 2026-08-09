@@ -2,16 +2,9 @@ import { execFile } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Ollama runs Llama 3.2 locally — completely free, no API key required.
-// Setup (one-time):
-//   1. Install Ollama: https://ollama.com/download
-//   2. Run in a terminal:  ollama pull llama3.2
-//   3. Ollama serves itself automatically at http://localhost:11434
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434/api/generate';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2';
 
-// Same schema as before — passed as Ollama's "format" param to keep the
-// response structured, so nothing downstream (routes/ai.js, the frontend) needs to change.
 const SUGGESTION_SCHEMA = {
   type: 'object',
   properties: {
@@ -25,9 +18,11 @@ const SUGGESTION_SCHEMA = {
           venueType: { type: 'string' },
           suggestedTime: { type: 'string' },
           duration: { type: 'string' },
-          reason: { type: 'string' }
+          reason: { type: 'string' },
+          startIso: { type: 'string' },
+          endIso: { type: 'string' }
         },
-        required: ['friendName', 'activity', 'suggestedTime', 'reason']
+        required: ['friendName', 'activity', 'suggestedTime', 'reason', 'startIso', 'endIso']
       }
     }
   },
@@ -35,35 +30,42 @@ const SUGGESTION_SCHEMA = {
 };
 
 function buildPrompt({ user, friends, freeSlots, preferences }) {
-  const maxSuggestions = friends?.length ? Math.min(friends.length, 5) : 3;
+  const count = Math.min(Math.max(friends?.length * 2 || 3, 3), 5);
 
-  return `
-You are Orbit's AI meetup planner. Orbit helps people keep friendships alive by turning free
-calendar time into concrete, personalized meetup ideas.
+  const friendsBlock = (friends || []).map(f => {
+    const parts = [`Name: ${f.name}`];
+    if (f.interests?.length) parts.push(`Interests: ${f.interests.join(', ')}`);
+    if (f.lastMet) parts.push(`Last met: ${f.lastMet}`);
+    return parts.join(' | ');
+  }).join('\n');
 
-Using the data below, suggest realistic meetups that fit the user's free time and each friend's
-interests and relationship context.
+  const slotsBlock = (freeSlots || []).length
+    ? JSON.stringify(freeSlots, null, 2)
+    : 'No specific slots provided — use general day/time guidance (morning, afternoon, evening).';
 
-USER:
-${JSON.stringify(user || {}, null, 2)}
+  return `You are Orbit's AI meetup planner. Your job is to suggest realistic, varied, and personalised meetup ideas.
+
+USER: ${user?.name || 'Unknown'}
 
 FRIENDS:
-${JSON.stringify(friends || [], null, 2)}
+${friendsBlock || 'No friend data provided.'}
 
-FREE_SLOTS (only suggest meetups that fit inside one of these):
-${JSON.stringify(freeSlots || [], null, 2)}
+FREE_SLOTS:
+${slotsBlock}
 
-PREFERENCES:
-${JSON.stringify(preferences || {}, null, 2)}
+PREFERENCES: ${JSON.stringify(preferences || {})}
 
-Rules:
-- Every suggestion must fit inside one of the given FREE_SLOTS — reference the slot's day/time in "suggestedTime".
-- Prioritize friends who haven't been met recently (see "lastMet" if provided).
-- Keep "activity" concrete and specific (e.g. "Coffee and catch-up at a nearby cafe", not "Hang out").
-- "reason" should be one short, warm sentence that references the specific friend's context (shared interest, how long since you last met, etc).
-- Return at most ${maxSuggestions} suggestions, ranked with the best one first.
-- Respond with ONLY the JSON object described by the schema — no extra commentary.
-`;
+STRICT RULES — follow every single one:
+1. Return EXACTLY ${count} suggestions. No more, no fewer.
+2. NEVER invent, assume, or hallucinate information not explicitly given above. Do not reference TV shows, books, hobbies, or past conversations unless they appear in FRIENDS data above.
+3. Every suggestion must use a DIFFERENT activity type. Forbidden repeats: no two suggestions can both be "coffee", both be "dinner", or both be the same category.
+4. Use a WIDE variety of activities: e.g. coffee/brunch, outdoor walk or hike, cooking together, board games, watching a movie, going to a market, playing a sport, attending a local event, a quick lunch.
+5. If no interests are listed for a friend, base suggestions on TIME OF DAY from FREE_SLOTS: morning → breakfast or walk; afternoon → lunch or activity; evening → dinner, drinks, or movie.
+6. "suggestedTime" MUST be a plain readable string like "Saturday evening" or "Sunday morning".
+7. "startIso" and "endIso" MUST be exact ISO 8601 strings (e.g. "2026-08-08T18:00:00.000Z") representing a 2-hour window chosen from the provided FREE_SLOTS. Pick a reasonable time inside the slot's datetime.
+8. "reason" must be one warm, genuine sentence. Only reference real data from above. If no context, write something like "It's been a while — a great excuse to catch up!"
+9. "activity" must be specific (e.g. "Cook dinner together at home" not "Hang out").
+10. Respond with ONLY valid JSON matching the schema. No extra text, no explanations.`;
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -123,7 +125,7 @@ export async function getMeetupSuggestions(payload) {
       body: JSON.stringify(requestBody)
     });
   } catch (err) {
-    // Most common failure: Ollama isn't installed or isn't running.
+    
     throw new Error(
       'Could not reach Ollama at ' +
         OLLAMA_URL +
