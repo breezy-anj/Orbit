@@ -2,8 +2,22 @@ import { execFile } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434/api/generate';
+/* ──────────────────────────────────────────────
+   Provider selection — set AI_PROVIDER env var:
+     "ollama"  → local Ollama  (default for dev)
+     "groq"    → Groq cloud    (default for prod)
+   ────────────────────────────────────────────── */
+
+const AI_PROVIDER = process.env.AI_PROVIDER || (process.env.GROQ_API_KEY ? 'groq' : 'ollama');
+
+// Ollama config
+const OLLAMA_URL   = process.env.OLLAMA_URL   || 'http://localhost:11434/api/generate';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2';
+
+// Groq config
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL   = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 const SUGGESTION_SCHEMA = {
   type: 'object',
@@ -86,6 +100,87 @@ function getAIPredictions(payload) {
   });
 }
 
+/* ──────────────────────────────────────────────
+   Ollama provider (local)
+   ────────────────────────────────────────────── */
+async function callOllama(prompt) {
+  const requestBody = {
+    model: OLLAMA_MODEL,
+    prompt,
+    stream: false,
+    format: SUGGESTION_SCHEMA,
+    options: { temperature: 0.7 }
+  };
+
+  let response;
+  try {
+    response = await fetch(OLLAMA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+  } catch (err) {
+    throw new Error(
+      'Could not reach Ollama at ' + OLLAMA_URL +
+      '. Make sure Ollama is installed and running, and that you have run "ollama pull ' +
+      OLLAMA_MODEL + '".'
+    );
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Ollama API error (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  const textPart = data?.response;
+  if (!textPart) throw new Error('Ollama returned an empty response.');
+
+  return JSON.parse(textPart);
+}
+
+/* ──────────────────────────────────────────────
+   Groq provider (cloud — free tier Llama)
+   ────────────────────────────────────────────── */
+async function callGroq(prompt) {
+  if (!GROQ_API_KEY) {
+    throw new Error(
+      'GROQ_API_KEY is not set. Get a free key at https://console.groq.com and add it to your .env file.'
+    );
+  }
+
+  const response = await fetch(GROQ_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [
+        { role: 'system', content: 'You are a helpful AI that responds only with valid JSON.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.7,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Groq API error (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  const textPart = data?.choices?.[0]?.message?.content;
+  if (!textPart) throw new Error('Groq returned an empty response.');
+
+  return JSON.parse(textPart);
+}
+
+/* ──────────────────────────────────────────────
+   Main export
+   ────────────────────────────────────────────── */
 export async function getMeetupSuggestions(payload) {
   const userIds = payload.friends.map(f => f.name.toLowerCase());
   if (payload.user?.name) {
@@ -104,55 +199,16 @@ export async function getMeetupSuggestions(payload) {
       joint_free_probability: (s.joint_free_probability * 100).toFixed(0) + '%'
     }));
   } catch (err) {
-    console.error('ML Prediction failed, falling back to provided freeSlots:', err);
+    console.error('ML Prediction failed, falling back to provided freeSlots:', err.message);
   }
 
   const prompt = buildPrompt(payload);
 
-  const requestBody = {
-    model: OLLAMA_MODEL,
-    prompt,
-    stream: false,
-    format: SUGGESTION_SCHEMA,
-    options: { temperature: 0.7 }
-  };
+  console.log(`[AI] Using provider: ${AI_PROVIDER}`);
 
-  let response;
-  try {
-    response = await fetch(OLLAMA_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-  } catch (err) {
-    
-    throw new Error(
-      'Could not reach Ollama at ' +
-        OLLAMA_URL +
-        '. Make sure Ollama is installed and running, and that you have run "ollama pull ' +
-        OLLAMA_MODEL +
-        '".'
-    );
-  }
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Ollama API error (${response.status}): ${errorText}`);
-  }
-
-  const data = await response.json();
-  const textPart = data?.response;
-
-  if (!textPart) {
-    throw new Error('Ollama returned an empty response.');
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(textPart);
-  } catch (err) {
-    throw new Error('Failed to parse Ollama response as JSON.');
-  }
+  const parsed = AI_PROVIDER === 'groq'
+    ? await callGroq(prompt)
+    : await callOllama(prompt);
 
   return parsed.suggestions || [];
 }
