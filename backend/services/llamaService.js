@@ -48,7 +48,7 @@ function buildPrompt({ user, friends, freeSlots, preferences }) {
 
   const friendsBlock = (friends || []).map(f => {
     const parts = [`Name: ${f.name}`];
-    if (f.interests?.length) parts.push(`Interests: ${f.interests.join(', ')}`);
+    if (f.interests?.length) parts.push(`Interests: ${Array.isArray(f.interests) ? f.interests.join(', ') : f.interests}`);
     if (f.lastMet) parts.push(`Last met: ${f.lastMet}`);
     return parts.join(' | ');
   }).join('\n');
@@ -71,15 +71,25 @@ PREFERENCES: ${JSON.stringify(preferences || {})}
 
 STRICT RULES — follow every single one:
 1. Return EXACTLY ${count} suggestions. No more, no fewer.
-2. NEVER invent, assume, or hallucinate information not explicitly given above. Do not reference TV shows, books, hobbies, or past conversations unless they appear in FRIENDS data above.
-3. Every suggestion must use a DIFFERENT activity type. Forbidden repeats: no two suggestions can both be "coffee", both be "dinner", or both be the same category.
-4. Use a WIDE variety of activities: e.g. coffee/brunch, outdoor walk or hike, cooking together, board games, watching a movie, going to a market, playing a sport, attending a local event, a quick lunch.
-5. If no interests are listed for a friend, base suggestions on TIME OF DAY from FREE_SLOTS: morning → breakfast or walk; afternoon → lunch or activity; evening → dinner, drinks, or movie.
-6. "suggestedTime" MUST be a plain readable string like "Saturday evening" or "Sunday morning".
-7. "startIso" and "endIso" MUST be exact ISO 8601 strings (e.g. "2026-08-08T18:00:00.000Z") representing a 2-hour window chosen from the provided FREE_SLOTS. Pick a reasonable time inside the slot's datetime.
-8. "reason" must be one warm, genuine sentence. Only reference real data from above. If no context, write something like "It's been a while — a great excuse to catch up!"
-9. "activity" must be specific (e.g. "Cook dinner together at home" not "Hang out").
-10. Respond with ONLY valid JSON matching the schema. No extra text, no explanations.`;
+2. For each suggestion, assign it to one of the friends listed above in "friendName".
+3. Every suggestion must use a DIFFERENT activity type (e.g. coffee/brunch, walk or hike, board games, movie, dinner, sport).
+4. "suggestedTime" MUST be a plain readable string like "Saturday evening" or "Sunday morning".
+5. "startIso" and "endIso" MUST be exact ISO 8601 strings (e.g. "2026-08-22T18:00:00.000Z") representing a 2-hour window.
+6. "reason" must be one warm, genuine sentence.
+7. "activity" must be specific (e.g. "Try new coffee spot downtown" or "Cook dinner together at home").
+8. Respond with ONLY valid JSON matching this schema:
+{
+  "suggestions": [
+    {
+      "friendName": "Exact Name of Friend",
+      "activity": "Activity Name",
+      "suggestedTime": "Saturday morning",
+      "reason": "Why this meetup idea is great",
+      "startIso": "2026-08-22T10:00:00.000Z",
+      "endIso": "2026-08-22T12:00:00.000Z"
+    }
+  ]
+}`;
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -91,10 +101,14 @@ function getAIPredictions(payload) {
     execFile(
       'python3',
       ['predict_cli.py', JSON.stringify(payload)],
-      { cwd: analyticsDir },
+      { cwd: analyticsDir, timeout: 3000 },
       (err, stdout, stderr) => {
         if (err) return reject(new Error(stderr || err.message));
-        resolve(JSON.parse(stdout));
+        try {
+          resolve(JSON.parse(stdout));
+        } catch (e) {
+          reject(e);
+        }
       }
     );
   });
@@ -140,10 +154,11 @@ async function callOllama(prompt) {
 }
 
 /* ──────────────────────────────────────────────
-   Groq provider (cloud — free tier Llama)
+   Groq provider (cloud — free tier Llama / GPT-OSS)
    ────────────────────────────────────────────── */
 async function callGroq(prompt) {
-  if (!GROQ_API_KEY) {
+  const apiKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
+  if (!apiKey) {
     throw new Error(
       'GROQ_API_KEY is not set. Get a free key at https://console.groq.com and add it to your .env file.'
     );
@@ -153,12 +168,12 @@ async function callGroq(prompt) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: GROQ_MODEL,
       messages: [
-        { role: 'system', content: 'You are a helpful AI that responds only with valid JSON.' },
+        { role: 'system', content: 'You are a helpful AI meetup planner that always responds with valid JSON matching the requested schema.' },
         { role: 'user', content: prompt },
       ],
       temperature: 0.7,
@@ -182,7 +197,7 @@ async function callGroq(prompt) {
    Main export
    ────────────────────────────────────────────── */
 export async function getMeetupSuggestions(payload) {
-  const userIds = payload.friends.map(f => f.name.toLowerCase());
+  const userIds = (payload.friends || []).map(f => (f.name || '').toLowerCase());
   if (payload.user?.name) {
     userIds.push(payload.user.name.toLowerCase());
   }
@@ -194,21 +209,37 @@ export async function getMeetupSuggestions(payload) {
       top_n: 5
     });
 
-    payload.freeSlots = mlResponse.suggestions.map(s => ({
-      datetime: s.datetime,
-      joint_free_probability: (s.joint_free_probability * 100).toFixed(0) + '%'
-    }));
+    if (mlResponse?.suggestions) {
+      payload.freeSlots = mlResponse.suggestions.map(s => ({
+        datetime: s.datetime,
+        joint_free_probability: (s.joint_free_probability * 100).toFixed(0) + '%'
+      }));
+    }
   } catch (err) {
-    console.error('ML Prediction failed, falling back to provided freeSlots:', err.message);
+    console.error('ML Prediction fallback to provided freeSlots:', err.message);
   }
 
   const prompt = buildPrompt(payload);
+  const provider = process.env.AI_PROVIDER || (process.env.GROQ_API_KEY ? 'groq' : 'ollama');
 
-  console.log(`[AI] Using provider: ${AI_PROVIDER}`);
+  console.log(`[AI] Using provider: ${provider}`);
 
-  const parsed = AI_PROVIDER === 'groq'
+  const parsed = provider === 'groq'
     ? await callGroq(prompt)
     : await callOllama(prompt);
 
-  return parsed.suggestions || [];
+  const rawList = parsed.suggestions || (Array.isArray(parsed) ? parsed : []);
+  const friendsList = payload.friends || [];
+
+  return rawList.map((s, idx) => {
+    const defaultFriend = friendsList[idx % (friendsList.length || 1)]?.name || 'Friend';
+    return {
+      friendName: s.friendName || defaultFriend,
+      activity: s.activity || 'Coffee catch up',
+      suggestedTime: s.suggestedTime || 'This weekend',
+      reason: s.reason || "It's been a while — great excuse to catch up!",
+      startIso: s.startIso || new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      endIso: s.endIso || new Date(Date.now() + 26 * 3600 * 1000).toISOString(),
+    };
+  });
 }
