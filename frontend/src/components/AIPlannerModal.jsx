@@ -19,8 +19,9 @@ function SuggestionCard({ s, index, friends, onSent }) {
   const [error,    setError]    = useState('');
 
   const friend = friends.find(f =>
-    f.name?.toLowerCase() === s.friendName?.toLowerCase()
-  );
+    f.name?.toLowerCase().includes(s.friendName?.toLowerCase()) ||
+    s.friendName?.toLowerCase().includes(f.name?.toLowerCase())
+  ) || friends[0];
 
   const handleSend = async () => {
     if (!friend?.id) {
