@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: npm install && pip install numpy scikit-learn --quiet 2>/dev/null || true
+    buildCommand: npm install && pip install numpy scikit-learn pandas --quiet 2>/dev/null || true
     startCommand: node server.js
     envVars:
       - key: PORT
